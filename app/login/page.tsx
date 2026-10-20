@@ -1,11 +1,11 @@
 'use client';
-import { useState` } from 'react';
-import { useRouter } from 'nextroute/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import.ts { Button } from '@/components/ui/Button';
-import { Input` } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
-export default function** LoginPage() {
+export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
   const [email, setEmail] = useState('');
