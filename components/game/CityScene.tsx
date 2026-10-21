@@ -36,22 +36,22 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           }
         }
 
-        // 2. Gedung Toko (Dibesarkan)
+        // 2. Gedung Toko
         const bx = (5 - 5) * (this.TW / 2);
         const by = (5 + 5) * (this.TH / 2);
         const building = this.add.image(bx, by, 'store');
         building.setOrigin(0.5, 1);
-        building.setScale(1.2); // <--- SKALA GEDUNG DIBESARKAN
+        building.setScale(1.2); 
         building.setDepth(by);
         building.setInteractive({ useHandCursor: true });
         building.on('pointerdown', () => onEnterBuilding());
 
-        // 3. Karakter (Dikecilkan)
+        // 3. Karakter
         const cx = (8 - 8) * (this.TW / 2);
         const cy = (8 + 8) * (this.TH / 2);
         this.hero = this.add.image(cx, cy, 'hero');
         this.hero.setOrigin(0.5, 1);
-        this.hero.setScale(0.12); // <--- SKALA KARAKTER DIKECILKAN
+        this.hero.setScale(0.12); 
         this.hero.setDepth(cy);
         this.target.set(cx, cy);
 
@@ -90,11 +90,19 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
     }
 
     gameRef.current = new Phaser.Game({
-      type: Phaser.AUTO, parent: ref.current, backgroundColor: '#2d2d44',
-      scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' }, scene: MainScene,
+      type: Phaser.AUTO, 
+      parent: ref.current, 
+      backgroundColor: '#2d2d44',
+      scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' }, 
+      scene: MainScene,
+      // --- 3 BARIS AJAIB BIAR TAJAM (HD) ---
+      pixelArt: true, 
+      roundPixels: true,
+      resolution: window.devicePixelRatio || 1
     });
+
     return () => { gameRef.current?.destroy(true); gameRef.current = null; };
   }, [onEnterBuilding]);
 
-  return <div ref={ref} className="w-full h-full absolute inset-0" />;
+  return <div ref={ref} className="w-full h-full absolute inset-0" style={{ imageRendering: 'pixelated' }} />;
 }
