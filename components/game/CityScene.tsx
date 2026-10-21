@@ -95,10 +95,9 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       backgroundColor: '#2d2d44',
       scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' }, 
       scene: MainScene,
-      // --- 3 BARIS AJAIB BIAR TAJAM (HD) ---
       pixelArt: true, 
-      roundPixels: true,
-      resolution: window.devicePixelRatio || 1
+      roundPixels: true
+      // resolution udah gue hapus biar Vercel bisa build
     });
 
     return () => { gameRef.current?.destroy(true); gameRef.current = null; };
