@@ -16,7 +16,6 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       private TH = 32;
 
       preload() {
-        // Load gambar dari folder public/assets/sprites/ lu
         this.load.image('hero', '/assets/sprites/npc_008.png');
         this.load.image('store', '/assets/sprites/building_010.png');
       }
@@ -37,27 +36,27 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           }
         }
 
-        // 2. Gedung Toko
+        // 2. Gedung Toko (Dibesarkan)
         const bx = (5 - 5) * (this.TW / 2);
         const by = (5 + 5) * (this.TH / 2);
         const building = this.add.image(bx, by, 'store');
         building.setOrigin(0.5, 1);
-        building.setScale(0.5);
+        building.setScale(1.2); // <--- SKALA GEDUNG DIBESARKAN
         building.setDepth(by);
         building.setInteractive({ useHandCursor: true });
         building.on('pointerdown', () => onEnterBuilding());
 
-        // 3. Karakter
+        // 3. Karakter (Dikecilkan)
         const cx = (8 - 8) * (this.TW / 2);
         const cy = (8 + 8) * (this.TH / 2);
         this.hero = this.add.image(cx, cy, 'hero');
         this.hero.setOrigin(0.5, 1);
-        this.hero.setScale(0.4);
+        this.hero.setScale(0.12); // <--- SKALA KARAKTER DIKECILKAN
         this.hero.setDepth(cy);
         this.target.set(cx, cy);
 
         // 4. Kamera
-        this.cameras.main.setZoom(1.5);
+        this.cameras.main.setZoom(1.2);
         this.cameras.main.centerOn(cx, cy);
 
         // 5. Kontrol Jalan & Geser
