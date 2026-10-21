@@ -19,7 +19,6 @@ export function CityView({ me, districts, locations, residents, balance: initial
   const canWork = currentLocation && ['cafe', 'store', 'warehouse'].includes(currentLocation.location_type);
   const residentsHere = residents.filter((r: any) => r.current_location_id === currentLoc);
 
-  // Load log aktivitas
   useEffect(() => {
     supabase.from('ledger_transactions')
       .select('id, transaction_type, created_at')
@@ -28,7 +27,6 @@ export function CityView({ me, districts, locations, residents, balance: initial
       .then(({ data }) => { if (data) setActivity(data); });
   }, [supabase]);
 
-  // Efek Toast
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3000);
@@ -79,8 +77,6 @@ export function CityView({ me, districts, locations, residents, balance: initial
 
   return (
     <div className="h-screen w-full bg-[#0a0b14] text-slate-200 flex flex-col overflow-hidden font-sans">
-      
-      {/* HEADER */}
       <header className="h-14 bg-[#12141f] border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center font-black text-white text-sm">V</div>
@@ -100,7 +96,6 @@ export function CityView({ me, districts, locations, residents, balance: initial
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* SIDEBAR */}
         <aside className="w-64 bg-[#12141f] border-r border-slate-800 flex flex-col shrink-0">
           <div className="flex border-b border-slate-800">
             {[{ id: 'map', label: 'PETA' }, { id: 'residents', label: 'WARGA' }, { id: 'activity', label: 'LOG' }].map((t) => (
@@ -119,7 +114,7 @@ export function CityView({ me, districts, locations, residents, balance: initial
                   {locations.filter((l: any) => l.district_id === d.id).map((l: any) => {
                     const isHere = currentLoc === l.id;
                     return (
-                      <button key={l.id} disabled={busy} onClick.name={() => travel(l.id, l.slug, l)}
+                      <button key={l.id} disabled={busy} onClick={() => travel(l.id, l.slug, l.name)}
                         className={`w-full text-left px-2.5 py-2 rounded-md text-xs flex items-center justify-between ${isHere ? 'bg-purple-600/20 border border-purple-500/40 text-purple-200' : 'hover:bg-slate-800/60 text-slate-400 border border-transparent'}`}>
                         <span className="truncate">{l.name}</span>
                       </button>
@@ -148,7 +143,6 @@ export function CityView({ me, districts, locations, residents, balance: initial
           </div>
         </aside>
 
-        {/* MAIN AREA */}
         <main className="flex-1 relative bg-gradient-to-br from-[#0f1220] via-[#0a0b14] to-[#12141f] overflow-hidden flex items-center justify-center p-6">
           <div className="w-full max-w-md">
             <div className="bg-[#12141f]/80 backdrop-blur-md border border-slate-800 rounded-2xl p-6 shadow-2xl">
@@ -176,14 +170,12 @@ export function CityView({ me, districts, locations, residents, balance: initial
             <p className="text-center text-[10px] text-slate-600 mt-4 italic">Aksi tersimpan ke server · Refresh aman</p>
           </div>
 
-          {/* TOAST */}
           {toast && (
             <div className={`absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-xs font-bold shadow-xl z-30 ${toast.type === 'ok' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{toast.text}</div>
           )}
         </main>
       </div>
 
-      {/* MODAL */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setModal(null)}>
           <div className="max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
