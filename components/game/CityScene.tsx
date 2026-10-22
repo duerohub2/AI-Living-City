@@ -28,6 +28,7 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       private target = new Phaser.Math.Vector2(0, 0);
       private readonly TW = 64;
       private readonly TH = 32;
+      private readonly MAP_SIZE = 25;
       private citizens: Citizen[] = [];
       private hud: Phaser.GameObjects.Text | null = null;
       private simMinutes = 8 * 60;
@@ -53,12 +54,13 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       }
 
       create() {
-        // Isometric green city map.
-        for (let y = 0; y < 15; y++) {
-          for (let x = 0; x < 15; x++) {
+        // Full 25x25 isometric city map; the game viewport itself is fixed at 800x800.
+        for (let y = 0; y < this.MAP_SIZE; y++) {
+          for (let x = 0; x < this.MAP_SIZE; x++) {
             const p = this.iso(x, y);
             const tile = this.add.graphics();
-            tile.fillStyle((x + y) % 2 === 0 ? 0x2ecc71 : 0x27ae60, 1);
+            const parkPatch = (x >= 18 && y >= 17 && (x + y) % 3 === 0);
+            tile.fillStyle(parkPatch ? 0x239b56 : ((x + y) % 2 === 0 ? 0x2ecc71 : 0x27ae60), 1);
             tile.lineStyle(1, 0x1a5c3a, 0.3);
             tile.beginPath();
             tile.moveTo(p.x, p.y - this.TH / 2);
@@ -72,8 +74,8 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           }
         }
 
-        // Store acts as the first workplace and shopping destination.
-        const storePos = this.iso(5, 5);
+        // Central store remains clickable and is the first workplace.
+        const storePos = this.iso(12, 12);
         const building = this.add.image(storePos.x, storePos.y, 'store');
         building.setOrigin(0.5, 1).setScale(1.2).setDepth(storePos.y + 5);
         building.setInteractive({ useHandCursor: true });
@@ -82,19 +84,19 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           onEnterBuilding();
         });
 
-        const heroPos = this.iso(8, 8);
+        // Preserve the original player character and tap-to-move control.
+        const heroPos = this.iso(15, 15);
         this.hero = this.add.image(heroPos.x, heroPos.y, 'hero');
         this.hero.setOrigin(0.5, 1).setScale(0.12).setDepth(heroPos.y + 10);
         this.target.copy(heroPos);
 
-        // A handful of citizens with different homes, wages and starting savings.
         const startingCitizens = [
-          { name: 'Ayu', home: [2, 11], money: 120, wage: 28, employed: true, tint: 0xffb6c1 },
-          { name: 'Bima', home: [11, 3], money: 75, wage: 24, employed: true, tint: 0xadd8e6 },
-          { name: 'Citra', home: [12, 10], money: 48, wage: 20, employed: true, tint: 0xffe082 },
-          { name: 'Dani', home: [3, 4], money: 22, wage: 18, employed: true, tint: 0xc5e1a5 },
-          { name: 'Eka', home: [9, 12], money: 15, wage: 16, employed: false, tint: 0xd1c4e9 },
-          { name: 'Fajar', home: [1, 7], money: 95, wage: 25, employed: true, tint: 0xffcc80 },
+          { name: 'Ayu', home: [3, 20], money: 120, wage: 28, employed: true, tint: 0xffb6c1 },
+          { name: 'Bima', home: [21, 4], money: 75, wage: 24, employed: true, tint: 0xadd8e6 },
+          { name: 'Citra', home: [22, 18], money: 48, wage: 20, employed: true, tint: 0xffe082 },
+          { name: 'Dani', home: [4, 6], money: 22, wage: 18, employed: true, tint: 0xc5e1a5 },
+          { name: 'Eka', home: [9, 22], money: 15, wage: 16, employed: false, tint: 0xd1c4e9 },
+          { name: 'Fajar', home: [2, 12], money: 95, wage: 25, employed: true, tint: 0xffcc80 },
         ];
 
         this.citizens = startingCitizens.map((data, index) => {
@@ -117,10 +119,13 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           backgroundColor: '#102018dd', padding: { x: 10, y: 8 }, lineSpacing: 4,
         }).setScrollFactor(0).setDepth(10000);
 
-        this.cameras.main.setZoom(1.2);
+        this.cameras.main.setZoom(0.9);
         this.cameras.main.centerOn(heroPos.x, heroPos.y);
+        const topLeft = this.iso(0, 0);
+        const bottomRight = this.iso(this.MAP_SIZE - 1, this.MAP_SIZE - 1);
+        this.cameras.main.setBounds(topLeft.x - this.TW, topLeft.y - this.TH, bottomRight.x - topLeft.x + this.TW * 2, bottomRight.y - topLeft.y + this.TH * 2);
 
-        // Distinguish a tap-to-move from a drag-to-pan gesture.
+        // Distinguish tap-to-move from drag-to-pan, including on touch screens.
         this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
           this.dragging = true;
           this.movedPointer = false;
@@ -160,24 +165,19 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           }
         }
 
-        // Accelerated in-game clock: one game minute every 250 ms.
+        // Accelerated clock: one in-game minute every 250 ms.
         this.simMinutes = (this.simMinutes + delta / 250) % (24 * 60);
         const hour = Math.floor(this.simMinutes / 60);
         const isWorkHours = hour >= 8 && hour < 17;
 
         this.citizens.forEach((citizen, index) => {
           if (time >= citizen.nextDecision) {
-            const shouldWork = citizen.employed && isWorkHours;
-            const destination = shouldWork
-              ? citizen.work
-              : citizen.home;
-            // Small offsets keep residents from stacking on the same pixel.
+            const destination = citizen.employed && isWorkHours ? citizen.work : citizen.home;
             this.moveCitizen(citizen, new Phaser.Math.Vector2(
               destination.x + (index % 3 - 1) * 9,
               destination.y + (index % 2 ? 4 : -4),
             ));
           }
-
           const dx = citizen.destination.x - citizen.sprite.x;
           const dy = citizen.destination.y - citizen.sprite.y;
           const distance = Math.hypot(dx, dy);
@@ -191,17 +191,13 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           citizen.label.setDepth(citizen.sprite.y + 30 + index);
         });
 
-        // Pay wages once when the simulated workday ends; charge living costs once per game day.
         if (hour !== this.lastPaidHour) {
           this.lastPaidHour = hour;
-          if (hour === 17) {
-            this.citizens.forEach((citizen) => {
-              if (citizen.employed) citizen.money += citizen.wage;
-            });
-          }
+          if (hour === 17) this.citizens.forEach((citizen) => {
+            if (citizen.employed) citizen.money += citizen.wage;
+          });
         }
 
-        // Charge costs once when the clock crosses into midnight.
         if (hour === 0 && this.lastSimHour !== 0) {
           this.citizens.forEach((citizen) => {
             citizen.money = Math.max(0, citizen.money - (citizen.employed ? 12 : 18));
@@ -209,7 +205,6 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
               citizen.employed = false;
               citizen.nextDecision = 0;
             }
-            // Unemployed residents can find work again once they have enough savings.
             if (!citizen.employed && citizen.money >= 12 && Phaser.Math.Between(1, 100) <= 8) {
               citizen.employed = true;
               citizen.nextDecision = 0;
@@ -224,7 +219,8 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           const struggling = this.citizens.filter((c) => c.money < 20).length;
           const clock = `${String(hour).padStart(2, '0')}:${String(Math.floor(this.simMinutes % 60)).padStart(2, '0')}`;
           this.hud.setText([
-            `KOTA KITA  •  ${clock}`,
+            `AI LIVING CITY • ${clock}`,
+            `Peta: ${this.MAP_SIZE} x ${this.MAP_SIZE} | Viewport: 800 x 800`,
             `Warga bekerja: ${employed}/${this.citizens.length}`,
             `Uang warga: ${Math.round(totalMoney)} koin`,
             `Kesulitan ekonomi: ${struggling} warga`,
@@ -238,7 +234,12 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       type: Phaser.AUTO,
       parent: ref.current,
       backgroundColor: '#2d2d44',
-      scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+      scale: {
+        mode: Phaser.Scale.FIT,
+        width: 800,
+        height: 800,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
       scene: MainScene,
       pixelArt: true,
       roundPixels: true,
@@ -250,5 +251,5 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
     };
   }, [onEnterBuilding]);
 
-  return <div ref={ref} className="absolute inset-0 h-full w-full" style={{ imageRendering: 'pixelated' }} />;
+  return <div ref={ref} className="relative" style={{ width: 800, height: 800, maxWidth: '100%', imageRendering: 'pixelated' }} />;
 }
