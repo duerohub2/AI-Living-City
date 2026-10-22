@@ -22,7 +22,7 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       private citizens: Citizen[] = []; private clockText: Phaser.GameObjects.Text | null = null;
       private simMinutes = 8 * 60; private lastPaidHour = -1; private lastSimHour = -1;
       private clickedBuilding = false; private dragging = false;
-      private pointerStart = new Phaser.Math.Vector2(); private movedPointer = false;
+      private pointerStart = new Phaser.Math.Vector2(); private movedPointer = false; private pinchDistance = 0; private zoomHandler: ((event: Event) => void) | null = null;
 
       private iso(x: number, y: number) { return new Phaser.Math.Vector2((x-y)*32,(x+y)*16); }
       private road(x:number,y:number) { return (x>=11&&x<=13)||(y>=11&&y<=13); }
@@ -44,6 +44,9 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       create(){
         for(let y=0;y<this.MAP_SIZE;y++)for(let x=0;x<this.MAP_SIZE;x++)this.drawTile(x,y);
         for(let i=0;i<15;i++){const x=17+i%6,y=17+Math.floor(i/6)*2;if(!(x===19&&y<21))this.tree(x,y,0.82+(i%3)*0.08);}
+        // Dense residential and commercial blocks around the main roads.
+        const blocks: Array<[number,number,number]> = [[3,3,.72],[6,3,.8],[3,7,.76],[7,7,.7],[18,3,.78],[21,5,.82],[18,8,.7],[5,17,.78],[8,19,.72],[14,18,.8],[16,22,.76],[22,21,.82],[4,23,.7],[8,3,.68],[20,12,.76],[5,10,.72],[8,14,.74],[16,7,.78],[22,9,.7],[3,14,.75],[7,23,.72],[15,3,.78],[18,15,.74],[23,17,.8]];
+        blocks.forEach(([x,y,scale],i)=>{const p=this.iso(x,y);const b=this.add.image(p.x,p.y-3,'store').setOrigin(.5,1).setScale(scale).setTint([0xffffff,0xe7d8b8,0xcce2c1,0xf0c9a8,0xc9d8e8][i%5]).setDepth(p.y+12+i);});
         [[2,2],[5,2],[2,5],[22,3],[22,7],[3,17],[6,21],[20,23],[23,14],[16,5]].forEach(([x,y])=>this.tree(x,y,.9));
         [[10,12],[14,12],[12,10],[12,14]].forEach(([x,y])=>{const p=this.iso(x,y);this.add.ellipse(p.x,p.y+1,12,5,0x273c31,.2).setDepth(p.y+1);this.add.rectangle(p.x,p.y-10,3,18,0x3e4549).setDepth(p.y+2);this.add.circle(p.x,p.y-20,5,0xffe7a0).setDepth(p.y+3);});
         const storePos=this.iso(12,12),building=this.add.image(storePos.x,storePos.y-4,'store');
@@ -61,8 +64,12 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
         this.citizens=people.map((d,i)=>{const home=this.iso(d.home[0],d.home[1]);const sprite=this.add.image(home.x,home.y,'hero').setOrigin(.5,1).setScale(.105).setTint(d.tint).setDepth(home.y+20+i);const label=this.add.text(home.x,home.y-24,d.name,{fontFamily:'Arial,sans-serif',fontSize:'10px',color:'#fffdf4',backgroundColor:'#254a34',padding:{x:4,y:3}}).setOrigin(.5,1).setDepth(home.y+30+i);return{name:d.name,sprite,label,home,work:storePos.clone(),money:d.money,wage:d.wage,employed:d.employed,destination:home.clone(),nextDecision:this.time.now+1000+i*650};});
         this.clockText=this.add.text(18,18,'08:00 • KOTA HIDUP',{fontFamily:'Arial,sans-serif',fontSize:'13px',fontStyle:'bold',color:'#f8f6ed',backgroundColor:'#203c2ddd',padding:{x:12,y:9}}).setScrollFactor(0).setDepth(10000);
         this.cameras.main.setZoom(.9);this.cameras.main.centerOn(heroPos.x,heroPos.y);this.cameras.main.setBounds(-880,-32,1760,920);
+        this.input.addPointer(1);
+        this.input.on('wheel',(_p:Phaser.Input.Pointer,_objects:Phaser.GameObjects.GameObject[],_dx:number,dy:number)=>{this.cameras.main.setZoom(Phaser.Math.Clamp(this.cameras.main.zoom+(dy<0?.08:-.08),.55,1.65));});
+        this.zoomHandler=((event:Event)=>{const amount=(event as CustomEvent<number>).detail;this.cameras.main.setZoom(Phaser.Math.Clamp(this.cameras.main.zoom+amount,.55,1.65));}) as EventListener;
+        window.addEventListener('city-map-zoom',this.zoomHandler);
         this.input.on('pointerdown',(p:Phaser.Input.Pointer)=>{this.dragging=true;this.movedPointer=false;this.pointerStart.set(p.x,p.y);});
-        this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{if(!this.dragging||!p.isDown)return;const dx=p.x-this.pointerStart.x,dy=p.y-this.pointerStart.y;if(Math.abs(dx)+Math.abs(dy)>5)this.movedPointer=true;if(this.movedPointer){this.cameras.main.scrollX-=dx/this.cameras.main.zoom;this.cameras.main.scrollY-=dy/this.cameras.main.zoom;this.pointerStart.set(p.x,p.y);}});
+        this.input.on('pointermove',(p:Phaser.Input.Pointer)=>{const p1=this.input.pointer1,p2=this.input.pointer2;if(p1?.isDown&&p2?.isDown){const distance=Phaser.Math.Distance.Between(p1.x,p1.y,p2.x,p2.y);if(this.pinchDistance>0){const change=distance-this.pinchDistance;if(Math.abs(change)>2)this.cameras.main.setZoom(Phaser.Math.Clamp(this.cameras.main.zoom+change*.002,.55,1.65));}this.pinchDistance=distance;this.dragging=false;return;}if(!p.isDown){this.pinchDistance=0;return;}if(!this.dragging)return;const dx=p.x-this.pointerStart.x,dy=p.y-this.pointerStart.y;if(Math.abs(dx)+Math.abs(dy)>5)this.movedPointer=true;if(this.movedPointer){this.cameras.main.scrollX-=dx/this.cameras.main.zoom;this.cameras.main.scrollY-=dy/this.cameras.main.zoom;this.pointerStart.set(p.x,p.y);}});
         this.input.on('pointerup',(p:Phaser.Input.Pointer)=>{this.dragging=false;if(this.movedPointer||this.clickedBuilding||!this.hero){this.clickedBuilding=false;return;}const world=this.cameras.main.getWorldPoint(p.x,p.y);this.target.set(world.x,world.y);});
       }
       update(_time:number,delta:number){
