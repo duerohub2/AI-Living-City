@@ -1,4 +1,5 @@
 'use client';
+
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -13,48 +14,83 @@ export function CityView({ me, balance: initialBalance }: any) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  async function logout() { await createClient().auth.signOut(); router.push('/'); }
+  async function logout() {
+    await createClient().auth.signOut();
+    router.push('/');
+  }
 
   async function work() {
     setBusy(true);
-    const res = await fetch('/api/v1/actions/work', { method: 'POST' });
-    const json = await res.json();
-    setBusy(false);
-    if (json.error) setToast(json.error.message);
-    else { setBalance((b: number) => b + json.data.wage); setToast(`+${json.data.wage} COIN!`); }
-    setTimeout(() => setToast(null), 3000);
+    try {
+      const res = await fetch('/api/v1/actions/work', { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok || json.error) setToast(json.error?.message ?? 'Gagal bekerja. Coba lagi.');
+      else {
+        setBalance((b: number) => b + json.data.wage);
+        setToast(`+${json.data.wage} COIN • Upah diterima`);
+      }
+    } catch {
+      setToast('Koneksi bermasalah. Coba lagi.');
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => setToast(null), 2800);
+    }
   }
 
   return (
-    <div className="h-screen w-full relative overflow-hidden bg-black select-none">
-      <CityScene onEnterBuilding={() => setInBuilding(true)} />
-
-      {/* HEADER UI */}
-      <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none z-10">
-        <div className="bg-slate-900/90 text-white px-4 py-2 rounded-xl border border-slate-600 flex gap-4 pointer-events-auto items-center shadow-xl">
-          <span className="font-black text-purple-400">VIREO</span>
-          <span className="text-sm font-bold">{me.displayName}</span>
-          <div className="bg-black/50 px-2 py-1 rounded text-yellow-400 text-sm font-bold border border-yellow-500/30">{balance} COIN</div>
+    <main className="city-shell">
+      <header className="city-topbar">
+        <div className="brand-lockup">
+          <div className="brand-mark">V</div>
+          <div><div className="brand-name">VIREO <span>CITY</span></div><div className="brand-subtitle">A living world</div></div>
         </div>
-        <button onClick={logout} className="pointer-events-auto bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">EXIT</button>
-      </div>
+        <div className="resident-pill"><span className="online-dot" /> <span className="resident-label">WARGA</span><strong>{me.displayName}</strong></div>
+        <div className="topbar-actions">
+          <div className="wallet-pill"><span>◆</span><div><small>SALDO KAMU</small><strong>{Number(balance).toLocaleString('id-ID')} <em>COIN</em></strong></div></div>
+          <button onClick={logout} className="exit-button">Keluar <span>↗</span></button>
+        </div>
+      </header>
 
-      {/* MODAL KERJA */}
-      {inBuilding && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border-2 border-purple-500 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
-            <h2 className="text-xl font-bold text-white mb-2">Toko Pusat</h2>
-            <p className="text-xs text-slate-400 mb-6">Bekerja di sini untuk mendapatkan upah.</p>
-            <button onClick={work} disabled={busy} className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold rounded-xl mb-3">
-              {busy ? 'BEKERJA...' : 'KERJA (+15 COIN)'}
-            </button>
-            <button onClick={() => setInBuilding(false)} className="w-full py-2 bg-slate-700 text-white rounded-xl text-sm">TUTUP</button>
+      <section className="city-layout">
+        <aside className="city-sidebar">
+          <div className="eyebrow"><span className="online-dot" /> LIVE SIMULATION</div>
+          <h1>Kota yang<br /><span>terus hidup.</span></h1>
+          <p className="sidebar-copy">Jelajahi kota, temui warga, dan bangun kehidupanmu sendiri.</p>
+          <div className="quick-stats">
+            <div className="stat-card"><span className="stat-icon">⌖</span><div><small>LOKASI</small><strong>Central Plaza</strong></div></div>
+            <div className="stat-card"><span className="stat-icon green">↗</span><div><small>AKTIVITAS</small><strong>Kota aktif</strong></div></div>
           </div>
+          <div className="guide-card">
+            <div className="guide-title"><span>✦</span> CARA BERMAIN</div>
+            <div className="guide-step"><span>01</span><p><strong>Sentuh peta</strong><small>Karakter bergerak ke titik tujuan.</small></p></div>
+            <div className="guide-step"><span>02</span><p><strong>Geser layar</strong><small>Jelajahi area kota yang lebih luas.</small></p></div>
+            <div className="guide-step"><span>03</span><p><strong>Kunjungi toko</strong><small>Masuk ke toko pusat untuk bekerja.</small></p></div>
+          </div>
+          <div className="sidebar-footer"><span className="online-dot" /> DUNIA TERHUBUNG <span className="version-tag">BETA</span></div>
+        </aside>
+
+        <section className="game-panel">
+          <div className="game-panel-head"><div><span className="panel-kicker">YOUR NEIGHBORHOOD</span><h2>Central District</h2></div><div className="map-live"><span className="online-dot" /> LIVE</div></div>
+          <div className="game-stage">
+            <div className="game-frame"><CityScene onEnterBuilding={() => setInBuilding(true)} /></div>
+            <div className="map-hint"><span>✥</span> Sentuh untuk bergerak <i /> Geser untuk menjelajah</div>
+          </div>
+        </section>
+      </section>
+
+      {inBuilding && (
+        <div className="city-modal-backdrop" onClick={() => setInBuilding(false)}>
+          <section className="city-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-art"><span>▦</span><div>VIREO MARKET</div></div>
+            <div className="modal-body"><div className="modal-kicker">CENTRAL DISTRICT</div><h2>Toko Pusat</h2><p>Ambil giliran kerja dan dapatkan koin untuk membangun kehidupanmu di kota.</p>
+              <div className="wage-row"><span>Upah per giliran</span><strong>+15 COIN</strong></div>
+              <button onClick={work} disabled={busy} className="work-button">{busy ? 'MEMPROSES...' : 'Mulai bekerja'} <span>→</span></button>
+              <button onClick={() => setInBuilding(false)} className="close-button">Kembali ke kota</button>
+            </div>
+          </section>
         </div>
       )}
-
-      {/* NOTIFIKASI */}
-      {toast && <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-2 rounded-full font-bold z-50 shadow-lg">{toast}</div>}
-    </div>
+      {toast && <div className="city-toast"><span>✓</span>{toast}</div>}
+    </main>
   );
 }
