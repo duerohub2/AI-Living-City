@@ -31,7 +31,9 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       private citizens: Citizen[] = [];
       private hud: Phaser.GameObjects.Text | null = null;
       private simMinutes = 8 * 60;
-      private lastEconomyTick = 0;
+      private lastPaidHour = -1;
+      private lastChargedDay = -1;
+      private clickedBuilding = false;
       private dragging = false;
       private pointerStart = new Phaser.Math.Vector2();
       private movedPointer = false;
@@ -75,7 +77,10 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
         const building = this.add.image(storePos.x, storePos.y, 'store');
         building.setOrigin(0.5, 1).setScale(1.2).setDepth(storePos.y + 5);
         building.setInteractive({ useHandCursor: true });
-        building.on('pointerdown', () => onEnterBuilding());
+        building.on('pointerdown', () => {
+          this.clickedBuilding = true;
+          onEnterBuilding();
+        });
 
         const heroPos = this.iso(8, 8);
         this.hero = this.add.image(heroPos.x, heroPos.y, 'hero');
@@ -134,7 +139,10 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
         });
         this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
           this.dragging = false;
-          if (this.movedPointer || !this.hero) return;
+          if (this.movedPointer || this.clickedBuilding || !this.hero) {
+            this.clickedBuilding = false;
+            return;
+          }
           const world = this.cameras.main.getWorldPoint(p.x, p.y);
           this.target.set(world.x, world.y);
         });
@@ -183,17 +191,27 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           citizen.label.setDepth(citizen.sprite.y + 30 + index);
         });
 
-        // Pay wages once per simulated workday; living costs accrue continuously.
-        if (time - this.lastEconomyTick > 3000) {
-          this.lastEconomyTick = time;
+        // Pay wages once when the simulated workday ends; charge living costs once per game day.
+        if (hour !== this.lastPaidHour) {
+          this.lastPaidHour = hour;
+          if (hour === 17) {
+            this.citizens.forEach((citizen) => {
+              if (citizen.employed) citizen.money += citizen.wage;
+            });
+          }
+        }
+
+        const simulatedDay = Math.floor(this.simMinutes / (24 * 60));
+        // The clock wraps at midnight, so detect the daily charge on the midnight hour.
+        if (hour === 0 && this.lastChargedDay !== simulatedDay) {
+          this.lastChargedDay = simulatedDay;
           this.citizens.forEach((citizen) => {
-            citizen.money = Math.max(0, citizen.money - (citizen.employed ? 2 : 3));
-            if (citizen.employed && isWorkHours) citizen.money += citizen.wage;
+            citizen.money = Math.max(0, citizen.money - (citizen.employed ? 12 : 18));
             if (citizen.money <= 0 && citizen.employed) {
               citizen.employed = false;
               citizen.nextDecision = 0;
             }
-            // A modest chance to find work again, so unemployment isn't permanent.
+            // Unemployed residents can find work again once they have enough savings.
             if (!citizen.employed && citizen.money >= 12 && Phaser.Math.Between(1, 100) <= 8) {
               citizen.employed = true;
               citizen.nextDecision = 0;
