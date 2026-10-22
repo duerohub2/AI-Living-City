@@ -56,7 +56,7 @@ export function CityView({ me, balance: initialBalance }: any) {
             <div className="modal-art"><div>VIREO MARKET</div></div>
             <div className="modal-body"><div className="modal-kicker">CENTRAL DISTRICT</div><h2>Toko Pusat</h2><p>Ambil giliran kerja dan dapatkan koin untuk membangun kehidupanmu di kota.</p>
               <div className="wage-row"><span>Upah per giliran</span><strong>+15 COIN</strong></div>
-              <button onClick={work} disabled={busy} className="work-button">{busy ? 'MEMPROSES...' : 'Mulai bekerja'} <span>→</span></button>
+              <button onClick={work} disabled={busy} className="work-button">{busy ? 'MEMPROSES...' : 'Mulai bekerja'} </button>
               <button onClick={() => setInBuilding(false)} className="close-button">Kembali ke kota</button>
             </div>
           </section>
