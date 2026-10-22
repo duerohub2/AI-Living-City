@@ -32,7 +32,7 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
       private hud: Phaser.GameObjects.Text | null = null;
       private simMinutes = 8 * 60;
       private lastPaidHour = -1;
-      private lastChargedDay = -1;
+      private lastSimHour = -1;
       private clickedBuilding = false;
       private dragging = false;
       private pointerStart = new Phaser.Math.Vector2();
@@ -201,10 +201,8 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
           }
         }
 
-        const simulatedDay = Math.floor(this.simMinutes / (24 * 60));
-        // The clock wraps at midnight, so detect the daily charge on the midnight hour.
-        if (hour === 0 && this.lastChargedDay !== simulatedDay) {
-          this.lastChargedDay = simulatedDay;
+        // Charge costs once when the clock crosses into midnight.
+        if (hour === 0 && this.lastSimHour !== 0) {
           this.citizens.forEach((citizen) => {
             citizen.money = Math.max(0, citizen.money - (citizen.employed ? 12 : 18));
             if (citizen.money <= 0 && citizen.employed) {
@@ -218,6 +216,7 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
             }
           });
         }
+        this.lastSimHour = hour;
 
         if (this.hud) {
           const employed = this.citizens.filter((c) => c.employed).length;
