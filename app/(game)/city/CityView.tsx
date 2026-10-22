@@ -38,45 +38,17 @@ export function CityView({ me, balance: initialBalance }: any) {
   }
 
   return (
-    <main className="city-shell">
-      <header className="city-topbar">
-        <div className="brand-lockup">
-          <div className="brand-mark">V</div>
-          <div><div className="brand-name">VIREO <span>CITY</span></div><div className="brand-subtitle">A living world</div></div>
+    <main className="coc-world">
+      <div className="world-map"><CityScene onEnterBuilding={() => setInBuilding(true)} /></div>
+      <div className="game-hud">
+        <div className="player-badge">
+          <div className="player-avatar">✦</div>
+          <div className="player-meta"><strong>{me.displayName}</strong><span>WARGA KOTA</span></div>
         </div>
-        <div className="resident-pill"><span className="online-dot" /> <span className="resident-label">WARGA</span><strong>{me.displayName}</strong></div>
-        <div className="topbar-actions">
-          <div className="wallet-pill"><span>◆</span><div><small>SALDO KAMU</small><strong>{Number(balance).toLocaleString('id-ID')} <em>COIN</em></strong></div></div>
-          <button onClick={logout} className="exit-button">Keluar <span>↗</span></button>
-        </div>
-      </header>
-
-      <section className="city-layout">
-        <aside className="city-sidebar">
-          <div className="eyebrow"><span className="online-dot" /> LIVE SIMULATION</div>
-          <h1>Kota yang<br /><span>terus hidup.</span></h1>
-          <p className="sidebar-copy">Jelajahi kota, temui warga, dan bangun kehidupanmu sendiri.</p>
-          <div className="quick-stats">
-            <div className="stat-card"><span className="stat-icon">⌖</span><div><small>LOKASI</small><strong>Central Plaza</strong></div></div>
-            <div className="stat-card"><span className="stat-icon green">↗</span><div><small>AKTIVITAS</small><strong>Kota aktif</strong></div></div>
-          </div>
-          <div className="guide-card">
-            <div className="guide-title"><span>✦</span> CARA BERMAIN</div>
-            <div className="guide-step"><span>01</span><p><strong>Sentuh peta</strong><small>Karakter bergerak ke titik tujuan.</small></p></div>
-            <div className="guide-step"><span>02</span><p><strong>Geser layar</strong><small>Jelajahi area kota yang lebih luas.</small></p></div>
-            <div className="guide-step"><span>03</span><p><strong>Kunjungi toko</strong><small>Masuk ke toko pusat untuk bekerja.</small></p></div>
-          </div>
-          <div className="sidebar-footer"><span className="online-dot" /> DUNIA TERHUBUNG <span className="version-tag">BETA</span></div>
-        </aside>
-
-        <section className="game-panel">
-          <div className="game-panel-head"><div><span className="panel-kicker">YOUR NEIGHBORHOOD</span><h2>Central District</h2></div><div className="map-live"><span className="online-dot" /> LIVE</div></div>
-          <div className="game-stage">
-            <div className="game-frame"><CityScene onEnterBuilding={() => setInBuilding(true)} /></div>
-            <div className="map-hint"><span>✥</span> Sentuh untuk bergerak <i /> Geser untuk menjelajah</div>
-          </div>
-        </section>
-      </section>
+        <div className="resource-pill"><span className="coin-icon">◆</span><strong>{Number(balance).toLocaleString('id-ID')}</strong><small>COIN</small></div>
+        <button onClick={logout} className="game-exit" aria-label="Keluar dari game" title="Keluar">↗</button>
+      </div>
+      <div className="world-tip"><span>✥</span> Sentuh peta untuk bergerak <i /> Geser untuk menjelajah</div>
 
       {inBuilding && (
         <div className="city-modal-backdrop" onClick={() => setInBuilding(false)}>
