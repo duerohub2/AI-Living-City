@@ -121,9 +121,16 @@ export default function CityScene({ onEnterBuilding }: { onEnterBuilding: () => 
 
         this.cameras.main.setZoom(0.9);
         this.cameras.main.centerOn(heroPos.x, heroPos.y);
-        const topLeft = this.iso(0, 0);
-        const bottomRight = this.iso(this.MAP_SIZE - 1, this.MAP_SIZE - 1);
-        this.cameras.main.setBounds(topLeft.x - this.TW, topLeft.y - this.TH, bottomRight.x - topLeft.x + this.TW * 2, bottomRight.y - topLeft.y + this.TH * 2);
+        const leftEdge = this.iso(0, this.MAP_SIZE - 1);
+        const rightEdge = this.iso(this.MAP_SIZE - 1, 0);
+        const topEdge = this.iso(0, 0);
+        const bottomEdge = this.iso(this.MAP_SIZE - 1, this.MAP_SIZE - 1);
+        this.cameras.main.setBounds(
+          leftEdge.x - this.TW,
+          topEdge.y - this.TH,
+          rightEdge.x - leftEdge.x + this.TW * 2,
+          bottomEdge.y - topEdge.y + this.TH * 2,
+        );
 
         // Distinguish tap-to-move from drag-to-pan, including on touch screens.
         this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
